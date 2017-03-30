@@ -1,0 +1,4 @@
+Yara folderPath = "/home/ivan/"
+Yara folderPaths = "/home/ivan"
+Yara source = "/home/ivan"
+Yara sources = "/home/ivan"
