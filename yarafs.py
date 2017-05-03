@@ -4,26 +4,56 @@ import logging
 import yara
 import sys
 import os
+from pathlib import Path
+from sys import platform
 
 yaraCfg = None #global yara Object
+cfgFile = 'config.txt'
+logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
 class yaraConfig(object):
-
-  def __init__(self,filePath,source,
-               filePaths, sources):
+  """ Basic object containing needed yara arguments """
+  def __init__(self,filePath,filePaths,source, sources):
     self.filePath = filePath
     self.filePaths = filePaths
-    self.source = source
-    self.sources = sources
+    self.src = source
+    self.srcs = sources
 
-def getPath(path):
-  pass
+def beginScan(rules):
+  """ Requires a list of rules to match against while it traverses the file system,yara's matches method requires a string input
+  therefore for each file found in filesFound check each and every single file, and print the matches"""
+  
+  if platform == 'linux':
+    print("Linux")
+    homeDir = os.path.expanduser('~')
+  filesFound = [] #emptyList as the initial state
+  os.chdir(homeDir)
+  print(homeDir)
+  filesFound = glob.glob('*.txt')
+  #filesFound = glob.glob(homeDir+'/*.*',recursive=True)
+  matchesFound = {}
+  for file in filesFound:
+    print("DEBUG: File"+file)
+    matches = rules.match(file)
+    if matches:
+      print(matches[0])
+      matchesFound.update({matches[0]:file})
 
-def checkForPath():
-  pass
+  print("Malware types found:\n---Malware \tFile---") #debug because idk wtf im doing here
+  for keys,values in matchesFound.items():
+    print(keys,"\t",values)
+
+def initYara():
+  try:
+    return yara.compile(yaraCfg.filePath)
+  except Exception as e:
+    print("==ERROR loading Yara!")
+    print("== "+e)
 
 def loadConfig(file):
+  """ Configuration setup, using the Yara object we will pass all needed arguments so that yara python module can be properly used"""
   global yaraCfg
+  yaraVals = {}
   fPath = None
   fPaths = None
   src = None
@@ -31,45 +61,45 @@ def loadConfig(file):
 
   cfgFile = open(file, 'r')
   for line in cfgFile.readlines():
-    if 'Yara folderPath' in line:
-      string = line.split('=')
-      fPath = string[1].strip() #White space needs to be a goner
+    string = line.split('=')
+    key = string[0].strip()
+    value = string[1].strip('\n')
+    value = value.replace('"','').strip()
+    yaraVals.update({key:value})
 
-    elif 'Yara folderPaths' in line:
-      string = line.split('=')
-      fPaths = string[1].strip()
 
-    elif 'Yara source' in line:
-      string = line.split('=')
-      src = string[1].strip()
-
-    elif 'Yara sources' in line:
-      string  = line.split('=')
-      srcs = string[1].strip()
-
-  yaraCfg = yaraConfig(fPath,fPaths,src,srcs)
+  for keys,values in yaraVals.items():
+    print (keys,values)
+  yaraCfg = yaraConfig(yaraVals['Yara folderPath'],yaraVals['Yara folderPaths'],yaraVals['Yara source'],yaraVals['Yara sources'])
 
   try:
-    getattr(yaraCfg, yaraCfg.filePath)
-    getattr(yaraCfg, yaraCfg.filePaths)
-    getattr(yaraCfg, yaraCfg.source)
-    getattr(yaraCfg, yaraCfg.sources)
+    if yaraCfg.filePath and yaraCfg.filePaths and yaraCfg.src and yaraCfg.srcs is not None:
+      logging.info(yaraCfg.filePath)
+      logging.info(yaraCfg.filePaths)
+      logging.info(yaraCfg.src)
+      logging.info(yaraCfg.srcs)
   except Exception as e:
     print ("Missing an attribute!")
-    print (e)
+    print(e)
 
 def bootUp():
-  for file in glob.glob("config.txt"):
-    if file is not None:
-      loadConfig(file)
-    else:
-      print("Configuration file was not found! Please redownload from repo")
-      exit(0)
+  if Path(cfgFile).exists():
+    loadConfig(cfgFile)
+  else:
+    print("Configuration file was not found! Please redownload from repo")
+    exit(0)
 
-if __name__ == '__main__':
+def main():
   parser = argparse.ArgumentParser(description='Uses yara to scan a given path for any known malware/viruses.')
-  parser.add_argument('-v',version="%(prog)s 1.0",help='prints out version')
+  parser.add_argument('-v',action='version',version="%(prog)s 1.0",help='prints out version')
   parser.add_argument('-s',dest='inputPath',help='Scan the specified path')
   args = parser.parse_args()
-  bootup()
+
+  bootUp()
+  rules = initYara() #create the yara object
+  print("Yara successfully Loaded! Let's hunt some Malware!")
+  beginScan(rules)
+
+if __name__ == '__main__':
+  main()
 
