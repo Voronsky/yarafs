@@ -30,23 +30,34 @@ def beginScan(rules):
 
   filesFound = [] #emptyList as the initial state
   os.chdir(homeDir)
-  #print(homeDir) #debug to make sure homeDir was read right
-  #filesFound = glob.glob('*.txt')
-  filesFound = glob.glob('**/*.txt',recursive=True)
+  filesFound = glob.iglob('**/*',recursive=True)
   matchesFound = {}
-,
-  for file in filesFound:
-    #print("DEBUG: File "+file)
-    matches = rules.match(file)
-    if matches:
-      #print(matches[0])
-      matchesFound.update({matches[0]:file})
 
-  print("Malware types found:\n---Malware \tFile---") #debug because idk wtf im doing here
-  for keys,values in matchesFound.items():
-    print(keys,"\t",values)
+  for file in filesFound:
+    if os.path.isfile(file):
+      try:
+        matches = rules.match(file)
+
+        if matches:
+          """If the malware already was detected and there was another file flagged for same malware, append that file to that specific malware"""
+          matchesFound.setdefault(matches[0],[]).append(file)
+
+      except Exception as e:
+        print("==ERROR==\nMaybe bad file?\n")
+        print(e)
+        print("===")
+        pass
+
+  """ If there are no malicious files found"""
+  if not matchesFound:
+    print("No malicious files found")
+  else:
+    print("Malware types found in Text files:\n---Malware \tFile---") #debug because idk wtf im doing here
+    for keys,values in matchesFound.items():
+      print(keys,"\t",values)
 
 def initYara():
+  """Creates the actual yara object"""
   try:
     return yara.compile(yaraCfg.filePath)
   except Exception as e:
@@ -55,49 +66,15 @@ def initYara():
     print(e)
     sys.exit(1)
 
-def loadConfig(file):
-  """ Configuration setup, using the Yara object we will pass all needed arguments so that yara python module can be properly used"""
-  global yaraCfg
-  yaraVals = {}
-  fPath = None
-  fPaths = None
-  src = None
-  srcs = None
-
-  cfgFile = open(file, 'r')
-  for line in cfgFile.readlines():
-    string = line.split('=')
-    key = string[0].strip()
-    value = string[1].strip('\n')
-    value = value.replace('"','').strip()
-    yaraVals.update({key:value})
-
-
-  """DEBUG to make sure the cfg file is read correctly"""
-  #for keys,values in yaraVals.items():
-  #  print (keys,values)
-
-  """Constructing the yara cfg object"""
-  yaraCfg = yaraConfig(yaraVals['Yara folderPath'],yaraVals['Yara folderPaths'],yaraVals['Yara source'],yaraVals['Yara sources'])
-
-  try:
-    if yaraCfg.filePath and yaraCfg.filePaths and yaraCfg.src and yaraCfg.srcs is not None:
-      logging.info(yaraCfg.filePath)
-      logging.info(yaraCfg.filePaths)
-      logging.info(yaraCfg.src)
-      logging.info(yaraCfg.srcs)
-  except Exception as e:
-    print ("Missing an attribute!")
-    print(e)
-    sys.exit(0)
-
-
 def grabLocalPaths():
+  """Setups the global Yara configuration object. It will also check what operating system the script is running on,
+     and then access the user's home directory with the path dependant on OS
+  """
   if platform == 'linux':
     curDir = os.getcwd()
 
   global yaraCfg
-  rulesFolder = curDir+'/myrules/test.rules'
+  rulesFolder = curDir+'/myrules/master_rules.yar'
   rulesFolderPaths = curDir
   srcFolder = curDir
   srcsFolder = curDir
@@ -106,10 +83,6 @@ def grabLocalPaths():
   
 
 def bootUp():
-  #if Path(cfgFile).exists():
-    #loadConfig(cfgFile)
-  #else:
-  #  print("Configuration file was not found! Please redownload from repo")
   grabLocalPaths()
   #  exit(0)
 
@@ -122,6 +95,7 @@ def main():
   bootUp()
   rules = initYara() #create the yara object
   print("Yara successfully Loaded! Let's hunt some Malware!")
+  print("This will take a while...")
   beginScan(rules)
 
 if __name__ == '__main__':
