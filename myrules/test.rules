@@ -1,0 +1,17 @@
+rule test1
+{
+  strings:
+    $my_string = "swag"
+
+  condition:
+    $my_string
+}
+
+rule test2
+{
+  strings:
+    $my_string = "git gud"
+
+  condition:
+    $my_string
+}
