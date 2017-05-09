@@ -1,6 +1,16 @@
 # yarafs
 A file scanner that will scan a specific path crossing all texts and binaries with Yara rulesets.
 
+# Requirements
+The requirements.txt is there for easy use to install. Use
+```
+pip install -r requirements.txt
+```
+
+Yara module >= 3.5.0
+
 # How it works
-It will read the configuration file, and check where the rule sets are defined, by default it will go to another folder in the same directory
-and read the rules there, in order to then scan the user's home directory.
+YaraFS checks the current path that the yara script is being run in, and checks for the rules folder called "myrules". Once in there, it will read
+from the master rule file called "master_rules.yar", which contains 'includes' of multiple yara rules. If you wish to add more rules, please modify
+the master_rules.yar file.
+
