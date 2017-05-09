@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import argparse
 import glob
 import logging
@@ -24,19 +26,20 @@ def beginScan(rules):
   therefore for each file found in filesFound check each and every single file, and print the matches"""
   
   if platform == 'linux':
-    print("Linux")
     homeDir = os.path.expanduser('~')
+
   filesFound = [] #emptyList as the initial state
   os.chdir(homeDir)
-  print(homeDir)
-  filesFound = glob.glob('*.txt')
-  #filesFound = glob.glob(homeDir+'/*.*',recursive=True)
+  #print(homeDir) #debug to make sure homeDir was read right
+  #filesFound = glob.glob('*.txt')
+  filesFound = glob.glob('**/*.txt',recursive=True)
   matchesFound = {}
+,
   for file in filesFound:
-    print("DEBUG: File"+file)
+    #print("DEBUG: File "+file)
     matches = rules.match(file)
     if matches:
-      print(matches[0])
+      #print(matches[0])
       matchesFound.update({matches[0]:file})
 
   print("Malware types found:\n---Malware \tFile---") #debug because idk wtf im doing here
@@ -48,7 +51,9 @@ def initYara():
     return yara.compile(yaraCfg.filePath)
   except Exception as e:
     print("==ERROR loading Yara!")
-    print("== "+e)
+    #print("== "+e)
+    print(e)
+    sys.exit(1)
 
 def loadConfig(file):
   """ Configuration setup, using the Yara object we will pass all needed arguments so that yara python module can be properly used"""
@@ -68,8 +73,11 @@ def loadConfig(file):
     yaraVals.update({key:value})
 
 
-  for keys,values in yaraVals.items():
-    print (keys,values)
+  """DEBUG to make sure the cfg file is read correctly"""
+  #for keys,values in yaraVals.items():
+  #  print (keys,values)
+
+  """Constructing the yara cfg object"""
   yaraCfg = yaraConfig(yaraVals['Yara folderPath'],yaraVals['Yara folderPaths'],yaraVals['Yara source'],yaraVals['Yara sources'])
 
   try:
@@ -81,13 +89,29 @@ def loadConfig(file):
   except Exception as e:
     print ("Missing an attribute!")
     print(e)
+    sys.exit(0)
+
+
+def grabLocalPaths():
+  if platform == 'linux':
+    curDir = os.getcwd()
+
+  global yaraCfg
+  rulesFolder = curDir+'/myrules/test.rules'
+  rulesFolderPaths = curDir
+  srcFolder = curDir
+  srcsFolder = curDir
+
+  yaraCfg = yaraConfig(rulesFolder,rulesFolderPaths,srcFolder,srcsFolder)
+  
 
 def bootUp():
-  if Path(cfgFile).exists():
-    loadConfig(cfgFile)
-  else:
-    print("Configuration file was not found! Please redownload from repo")
-    exit(0)
+  #if Path(cfgFile).exists():
+    #loadConfig(cfgFile)
+  #else:
+  #  print("Configuration file was not found! Please redownload from repo")
+  grabLocalPaths()
+  #  exit(0)
 
 def main():
   parser = argparse.ArgumentParser(description='Uses yara to scan a given path for any known malware/viruses.')
