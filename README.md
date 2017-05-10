@@ -14,3 +14,4 @@ YaraFS checks the current path that the yara script is being run in, and checks 
 from the master rule file called "master_rules.yar", which contains 'includes' of multiple yara rules. If you wish to add more rules, please modify
 the master_rules.yar file.
 
+![Example](http://imgur.com/oHiSD3r.png)
