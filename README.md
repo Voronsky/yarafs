@@ -1,7 +1,8 @@
 # yarafs
 A file scanner that will scan a specific path crossing all texts and binaries with Yara rulesets.
 
-# Requirements
+# Development setup
+## Requirements
 The requirements.txt is there for easy use to install. Use
 ```
 pip install -r requirements.txt
@@ -15,3 +16,9 @@ from the master rule file called "master_rules.yar", which contains 'includes' o
 the master_rules.yar file.
 
 ![Example](http://imgur.com/oHiSD3r.png)
+
+to use type
+```
+./yarafs
+```
+
